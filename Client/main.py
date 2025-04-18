@@ -16,37 +16,31 @@ def sidebar():
     # Full-width button styling for sidebar
     st.markdown(""" 
         <style> 
-        /* Make sidebar button full width */
-        .css-1cpxqw2 { width: 100% !important; }  /* Full width button styling */ 
-        .stButton button { width: 100% !important; }  /* Full width button */
-        
-        /* Full width for the selectbox and radio buttons */
-        .stSelectbox, .stRadio { width: 100% !important; }  /* Full width dropdown */
-        
-        /* Customizing the sidebar background */
+        .css-1cpxqw2 { width: 100% !important; }  
+        .stButton button { width: 100% !important; }  
+        .stSelectbox, .stRadio { width: 100% !important; }  
         .css-1d391kg {
-            background-color: #f5f5f5 !important;  /* Customize background color */
+            background-color: #f5f5f5 !important;
             padding: 1em;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Sidebar contents
     with st.sidebar:
-        # Home button (just a placeholder for navigation)
         home_button = st.button("Home", key="home_sidebar_1")
-        
-        # Features dropdown (non-typable)
         feature_selection = st.selectbox("Features", ["Feature 1", "Feature 2", "Feature 3"], key="features_sidebar_1")
-        
-        # Profile buttons for Sign In and Sign Up
-        sign_in_button = st.button("Sign In", key="sign_in_button_1")
-        sign_up_button = st.button("Sign Up", key="sign_up_button_1")
 
-    return home_button, feature_selection, sign_in_button, sign_up_button
+        # Check if signed in
+        if st.session_state.get("signed_in", False):
+            sign_out_button = st.button("Sign Out", key="sign_out_button_1")
+            return home_button, feature_selection, None, None, sign_out_button
+        else:
+            sign_in_button = st.button("Sign In", key="sign_in_button_1")
+            sign_up_button = st.button("Sign Up", key="sign_up_button_1")
+            return home_button, feature_selection, sign_in_button, sign_up_button, None
 
 
-home_button, feature_selection, sign_in_button, sign_up_button = sidebar()
+
 
 # Title page with typing animation and button
 def title_page():
@@ -129,15 +123,18 @@ def title_page():
         st.markdown('</div>', unsafe_allow_html=True)
 
 # Function for the home page content
-def home_page():
-
-   
-
+def home_page(home_button, sign_in_button, sign_up_button, sign_out_button):
     # Redirect to Sign In or Sign Up based on button click
     if sign_in_button:
         st.session_state.page = "sign_in"
     elif sign_up_button:
         st.session_state.page = "sign_up"
+    # Sign out action
+    elif sign_out_button:
+        st.session_state.signed_in = False
+        st.session_state.page = "home"
+        st.rerun()
+
     
     # Check if the user is signed in or navigate to the appropriate page
     if "page" not in st.session_state:
@@ -147,15 +144,81 @@ def home_page():
         # Home page content when signed in
         if "signed_in" in st.session_state and st.session_state.signed_in:
             st.title("Welcome to Your Dashboard")
-            card_titles = ["Card 1", "Card 2", "Card 3", "Card 4"]
-            cols = st.columns(4)
-            for i, col in enumerate(cols):
-                with col:
-                    st.markdown(f"""
-                        <div style='padding: 1em; border-radius: 10px; background-color: #f0f2f6; text-align: center;'>
-                            <h4>{card_titles[i]}</h4>
+            st.markdown(
+                """
+                <style>
+                .grid-button {
+                    background-color: #373782;
+                    color: white;
+                    border: none;
+                    border-radius: 15px;
+                    padding: 3em;
+                    font-size: 1.5em;
+                    font-weight: bold;
+                    width: 100%;
+                    height: 100%;
+                    text-align: center;
+                    transition: 0.3s ease;
+                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+                }
+
+                .grid-button:hover {
+                    background-color: #2f2f70;
+                    cursor: pointer;
+                }
+
+                .grid-container {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.5em;
+                    margin-top: 2em;
+                }
+
+                .grid-row {
+                    display: flex;
+                    gap: 1.5em;
+                }
+
+                .grid-col {
+                    flex: 1;
+                    display: flex;
+                    align-items: stretch;
+                }
+
+                .button-wrapper {
+                    width: 100%;
+                }
+                </style>
+
+                <div class="grid-container">
+                    <div class="grid-row">
+                        <div class="grid-col">
+                            <div class="button-wrapper">
+                                <button class="grid-button">Memos</button>
+                            </div>
                         </div>
-                    """, unsafe_allow_html=True)
+                        <div class="grid-col">
+                            <div class="button-wrapper">
+                                <button class="grid-button">Chat</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-row">
+                        <div class="grid-col">
+                            <div class="button-wrapper">
+                                <button class="grid-button">Calendar</button>
+                            </div>
+                        </div>
+                        <div class="grid-col">
+                            <div class="button-wrapper">
+                                <button class="grid-button">Organize</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
             # Show info about the app when not signed in
             st.title("Welcome to Our AI-Powered Personal Assistant!")
@@ -189,26 +252,34 @@ def home_page():
 def main():
     if "page" not in st.session_state:
         st.session_state.page = "title"
+    if "signed_in" not in st.session_state:
+        st.session_state.signed_in = False
 
     # Page routing logic
     if st.session_state.page == "title":
         title_page()
-    elif st.session_state.page == "home":
-        home_page()
-    elif st.session_state.page == "sign_in":
-        sign_in_page()
-    elif st.session_state.page == "sign_up":
-        sign_up_page()
+    else:
+        # Call sidebar AFTER state updates
+        home_button, feature_selection, sign_in_button, sign_up_button, sign_out_button = sidebar()
 
-    # Redirect to Sign In or Sign Up based on button click
-    if sign_in_button:
-        st.session_state.page = "sign_in"
-    elif sign_up_button:
-        st.session_state.page = "sign_up"
+        # Handle navigation buttons
+        if sign_in_button:
+            st.session_state.page = "sign_in"
+        elif sign_up_button:
+            st.session_state.page = "sign_up"
+        elif sign_out_button:
+            st.session_state.signed_in = False
+            st.session_state.page = "home"
+        elif home_button:
+            st.session_state.page = "home"
 
-    # Handle home button action
-    if home_button:
-        st.session_state.page = "home"
+        # Route to the appropriate page
+        if st.session_state.page == "home":
+            home_page(home_button, sign_in_button, sign_up_button, sign_out_button)
+        elif st.session_state.page == "sign_in":
+            sign_in_page()
+        elif st.session_state.page == "sign_up":
+            sign_up_page()
 
 
 if __name__ == "__main__":

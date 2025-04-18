@@ -15,10 +15,12 @@ def sign_in_page():
 
     with st.form("signin_form"):
         email = st.text_input("Email")
-        password = st.text_input("Password")
+        password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Log In")
         
         if submitted:
             user = sign_in(email, password)
             if user:
                 st.session_state.signed_in = True
+                st.session_state.page = "home"  # optionally route back to home
+                st.rerun()  # 🔁 force app to re-render with updated session state
